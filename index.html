@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>手机版复利增长计算器</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #f5f6f8;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --soft: #f3f4f6;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      --radius: 18px;
+    }
+
+    body {
+      margin: 0;
+      padding: max(14px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+      font-family: Arial, "Microsoft YaHei", "PingFang SC", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 18px;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      margin: 4px 0 14px;
+      font-size: clamp(22px, 6vw, 34px);
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .formula {
+      margin: 12px 0 18px;
+      padding: 14px 12px;
+      border-radius: 14px;
+      background: var(--soft);
+      font-size: clamp(22px, 7vw, 30px);
+      text-align: center;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .control {
+      margin: 16px 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .label-value {
+      flex-shrink: 0;
+      font-weight: 700;
+      color: #000;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      min-height: 36px;
+      accent-color: #111827;
+    }
+
+    .number-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid #cfd4dc;
+      border-radius: 12px;
+      font-size: 16px;
+      background: #fff;
+    }
+
+    .unit {
+      min-width: 42px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: left;
+    }
+
+    .result {
+      margin: 20px 0;
+      padding: 16px 12px;
+      border-radius: 16px;
+      background: #111827;
+      color: #fff;
+      text-align: center;
+      font-size: clamp(20px, 5.5vw, 28px);
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .result span {
+      display: inline-block;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+
+    .chart-wrap {
+      width: 100%;
+      margin-top: 16px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    canvas {
+      width: 100%;
+      height: clamp(260px, 66vw, 420px);
+      display: block;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    @media (min-width: 700px) {
+      body {
+        padding: 32px 20px;
+      }
+
+      .card {
+        padding: 26px;
+      }
+
+      .input-row {
+        grid-template-columns: 1fr 180px;
+      }
+
+      .number-row {
+        grid-template-columns: 130px 42px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <h1>手机版复利增长计算器</h1>
+
+    <div class="formula">
+      A = P × (1 + r)<sup>t</sup>
+    </div>
+
+    <section class="control">
+      <label>
+        <span>本金 P</span>
+        <span class="label-value"><span id="principalText">100,000</span> 美元</span>
+      </label>
+
+      <div class="input-row">
+        <input id="principal" type="range" min="100" max="10000000" step="100" value="100000" />
+        <div class="number-row">
+          <input id="principalNumber" type="number" inputmode="numeric" min="100" max="10000000" step="100" value="100000" />
+          <span class="unit">美元</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="control">
+      <label>
+        <span>年收益率 r</span>
+        <span class="label-value"><span id="rateText">5</span>%</span>
+      </label>
+
+      <div class="input-row">
+        <input id="rate" type="range" min="1" max="50" step="0.1" value="5" />
+        <div class="number-row">
+          <input id="rateNumber" type="number" inputmode="decimal" min="1" max="50" step="0.1" value="5" />
+          <span class="unit">%</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="control">
+      <label>
+        <span>投资年限 t</span>
+        <span class="label-value"><span id="yearsText">20</span> 年</span>
+      </label>
+
+      <div class="input-row">
+        <input id="years" type="range" min="1" max="100" step="1" value="20" />
+        <div class="number-row">
+          <input id="yearsNumber" type="number" inputmode="numeric" min="1" max="100" step="1" value="20" />
+          <span class="unit">年</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="control">
+      <label>
+        <span>显示第 n 年</span>
+        <span class="label-value"><span id="selectedYearText">10</span> 年</span>
+      </label>
+
+      <div class="input-row">
+        <input id="selectedYear" type="range" min="0" max="100" step="1" value="10" />
+        <div class="number-row">
+          <input id="selectedYearNumber" type="number" inputmode="numeric" min="0" max="100" step="1" value="10" />
+          <span class="unit">年</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="result">
+      最终金额：<span id="result">0</span> 美元
+    </div>
+
+    <div class="chart-wrap">
+      <canvas id="chart"></canvas>
+    </div>
+
+    <div class="note">
+      说明：这个版本针对手机屏幕优化。滑杆和输入框会自动上下排列，图表会根据手机屏幕宽度重新绘制。横轴是投资年数，纵轴是金额。拖动滑杆或直接输入数字，都可以调整参数。
+    </div>
+  </main>
+
+  <script>
+    const principalInput = document.getElementById("principal");
+    const rateInput = document.getElementById("rate");
+    const yearsInput = document.getElementById("years");
+    const selectedYearInput = document.getElementById("selectedYear");
+
+    const principalNumber = document.getElementById("principalNumber");
+    const rateNumber = document.getElementById("rateNumber");
+    const yearsNumber = document.getElementById("yearsNumber");
+    const selectedYearNumber = document.getElementById("selectedYearNumber");
+
+    const principalText = document.getElementById("principalText");
+    const rateText = document.getElementById("rateText");
+    const yearsText = document.getElementById("yearsText");
+    const selectedYearText = document.getElementById("selectedYearText");
+    const resultText = document.getElementById("result");
+
+    const canvas = document.getElementById("chart");
+    const ctx = canvas.getContext("2d");
+
+    let latestData = [];
+    let latestSelectedYear = 0;
+
+    function formatMoney(num) {
+      return Math.round(num).toLocaleString("en-US");
+    }
+
+    function calculateAmount(P, r, t) {
+      return P * Math.pow(1 + r, t);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function syncRangeToNumber(rangeInput, numberInput) {
+      numberInput.value = rangeInput.value;
+      update();
+    }
+
+    function syncNumberToRange(numberInput, rangeInput) {
+      const min = Number(rangeInput.min);
+      const max = Number(rangeInput.max);
+      const step = Number(rangeInput.step);
+      let value = Number(numberInput.value);
+
+      if (Number.isNaN(value)) {
+        value = Number(rangeInput.value);
+      }
+
+      value = clamp(value, min, max);
+
+      if (step === 1) {
+        value = Math.round(value);
+      } else {
+        value = Math.round(value * 10) / 10;
+      }
+
+      numberInput.value = value;
+      rangeInput.value = value;
+      update();
+    }
+
+    function prepareCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      const width = Math.max(300, Math.round(rect.width));
+      const height = Math.max(240, Math.round(rect.height));
+
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+      return { width, height };
+    }
+
+    function drawChart(data, selectedYear) {
+      if (!data.length) return;
+
+      const size = prepareCanvas();
+      const width = size.width;
+      const height = size.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const isSmall = width < 430;
+      const paddingLeft = isSmall ? 62 : 86;
+      const paddingRight = isSmall ? 18 : 44;
+      const paddingTop = isSmall ? 38 : 50;
+      const paddingBottom = isSmall ? 54 : 68;
+      const chartWidth = width - paddingLeft - paddingRight;
+      const chartHeight = height - paddingTop - paddingBottom;
+
+      const maxValue = Math.max(...data.map(item => item.amount));
+
+      function getX(index) {
+        if (data.length === 1) return paddingLeft;
+        return paddingLeft + (index / (data.length - 1)) * chartWidth;
+      }
+
+      function getY(amount) {
+        return paddingTop + chartHeight - (amount / maxValue) * chartHeight;
+      }
+
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      const yTicks = isSmall ? 4 : 5;
+      for (let i = 0; i <= yTicks; i++) {
+        const value = (maxValue / yTicks) * i;
+        const y = getY(value);
+
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, y);
+        ctx.lineTo(paddingLeft + chartWidth, y);
+        ctx.strokeStyle = "#e5e7eb";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.font = (isSmall ? "10px" : "12px") + " Arial";
+        ctx.fillStyle = "#111827";
+        ctx.textAlign = "right";
+        ctx.fillText(formatMoney(value), paddingLeft - 8, y + 4);
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(paddingLeft, paddingTop);
+      ctx.lineTo(paddingLeft, paddingTop + chartHeight);
+      ctx.lineTo(paddingLeft + chartWidth, paddingTop + chartHeight);
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      const totalYears = data.length - 1;
+      const xStep = Math.max(1, Math.ceil(totalYears / (isSmall ? 4 : 5)));
+
+      for (let year = 0; year <= totalYears; year += xStep) {
+        const x = getX(year);
+
+        ctx.beginPath();
+        ctx.moveTo(x, paddingTop + chartHeight);
+        ctx.lineTo(x, paddingTop + chartHeight + 5);
+        ctx.strokeStyle = "#111827";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.font = (isSmall ? "10px" : "12px") + " Arial";
+        ctx.fillStyle = "#111827";
+        ctx.textAlign = "center";
+        ctx.fillText(year + "年", x, paddingTop + chartHeight + 22);
+      }
+
+      if (totalYears % xStep !== 0) {
+        const x = getX(totalYears);
+        ctx.font = (isSmall ? "10px" : "12px") + " Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(totalYears + "年", x, paddingTop + chartHeight + 22);
+      }
+
+      ctx.beginPath();
+      data.forEach((item, index) => {
+        const x = getX(index);
+        const y = getY(item.amount);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = isSmall ? 2.5 : 3;
+      ctx.stroke();
+
+      const selectedData = data[selectedYear];
+      if (selectedData) {
+        const x = getX(selectedYear);
+        const y = getY(selectedData.amount);
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, paddingTop + chartHeight);
+        ctx.strokeStyle = "#9ca3af";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, y);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = "#9ca3af";
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(x, y, isSmall ? 5 : 6, 0, Math.PI * 2);
+        ctx.fillStyle = "#111827";
+        ctx.fill();
+
+        const label = selectedYear + "年：" + formatMoney(selectedData.amount) + "美元";
+        ctx.font = (isSmall ? "12px" : "14px") + " Arial";
+        ctx.fillStyle = "#111827";
+        ctx.textAlign = "left";
+
+        let labelX = x + 10;
+        let labelY = y - 10;
+        const estimatedLabelWidth = ctx.measureText(label).width;
+
+        if (labelX + estimatedLabelWidth > width - 8) {
+          labelX = Math.max(paddingLeft + 6, x - estimatedLabelWidth - 10);
+        }
+        if (labelY < 18) {
+          labelY = y + 24;
+        }
+        if (labelY > height - 18) {
+          labelY = y - 18;
+        }
+
+        ctx.fillText(label, labelX, labelY);
+      }
+
+      ctx.font = (isSmall ? "14px" : "16px") + " Arial";
+      ctx.fillStyle = "#111827";
+      ctx.textAlign = "center";
+      ctx.fillText("复利增长曲线", width / 2, isSmall ? 24 : 30);
+
+      ctx.font = (isSmall ? "11px" : "13px") + " Arial";
+      ctx.fillText("投资年数", paddingLeft + chartWidth / 2, height - 18);
+
+      ctx.font = (isSmall ? "11px" : "13px") + " Arial";
+      ctx.fillStyle = "#111827";
+      ctx.textAlign = "left";
+      ctx.fillText("金额（美元）", 10, isSmall ? 20 : 24);
+    }
+
+    function updateSelectedYearLimit(t) {
+      selectedYearInput.max = t;
+      selectedYearNumber.max = t;
+
+      if (Number(selectedYearInput.value) > t) {
+        selectedYearInput.value = t;
+      }
+      if (Number(selectedYearNumber.value) > t) {
+        selectedYearNumber.value = t;
+      }
+    }
+
+    function update() {
+      const P = Number(principalInput.value);
+      const r = Number(rateInput.value) / 100;
+      const t = Number(yearsInput.value);
+
+      updateSelectedYearLimit(t);
+
+      let selectedYear = Number(selectedYearInput.value);
+      selectedYear = clamp(selectedYear, 0, t);
+
+      principalText.textContent = formatMoney(P);
+      rateText.textContent = rateInput.value;
+      yearsText.textContent = t;
+      selectedYearText.textContent = selectedYear;
+
+      principalNumber.value = principalInput.value;
+      rateNumber.value = rateInput.value;
+      yearsNumber.value = yearsInput.value;
+      selectedYearNumber.value = selectedYear;
+
+      const finalAmount = calculateAmount(P, r, t);
+      resultText.textContent = formatMoney(finalAmount);
+
+      const data = [];
+      for (let year = 0; year <= t; year++) {
+        data.push({
+          year: year,
+          amount: calculateAmount(P, r, year)
+        });
+      }
+
+      latestData = data;
+      latestSelectedYear = selectedYear;
+      drawChart(latestData, latestSelectedYear);
+    }
+
+    function bindPair(rangeInput, numberInput) {
+      rangeInput.addEventListener("input", () => syncRangeToNumber(rangeInput, numberInput));
+      numberInput.addEventListener("change", () => syncNumberToRange(numberInput, rangeInput));
+      numberInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+          numberInput.blur();
+          syncNumberToRange(numberInput, rangeInput);
+        }
+      });
+    }
+
+    bindPair(principalInput, principalNumber);
+    bindPair(rateInput, rateNumber);
+    bindPair(yearsInput, yearsNumber);
+    bindPair(selectedYearInput, selectedYearNumber);
+
+    window.addEventListener("resize", () => {
+      drawChart(latestData, latestSelectedYear);
+    });
+
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(() => drawChart(latestData, latestSelectedYear));
+      observer.observe(canvas);
+    }
+
+    update();
+  </script>
+</body>
+</html>
