@@ -156,6 +156,13 @@
       overflow-wrap: anywhere;
     }
 
+    .result-secondary {
+      margin-top: 8px;
+      font-size: clamp(15px, 4.2vw, 20px);
+      font-weight: 600;
+      color: #d1d5db;
+    }
+
     .chart-wrap {
       width: 100%;
       margin-top: 16px;
@@ -269,7 +276,8 @@
     </section>
 
     <div class="result">
-      最终金额：<span id="result">0</span> 美元
+      <div>最终价值金额：<span id="result">0</span> 美元</div>
+      <div class="result-secondary">累计投入本金：<span id="totalPrincipal">0</span> 美元</div>
     </div>
 
     <div class="chart-wrap">
@@ -297,6 +305,7 @@
     const yearsText = document.getElementById("yearsText");
     const selectedYearText = document.getElementById("selectedYearText");
     const resultText = document.getElementById("result");
+    const totalPrincipalText = document.getElementById("totalPrincipal");
 
     const canvas = document.getElementById("chart");
     const ctx = canvas.getContext("2d");
@@ -322,6 +331,11 @@
       }
 
       return P * (Math.pow(1 + monthlyRate, months) - 1) / monthlyRate;
+    }
+
+    function calculateTotalPrincipal(P, years) {
+      // 每月定投金额 × 12个月 × 投资年数
+      return P * 12 * years;
     }
 
     function clamp(value, min, max) {
@@ -555,7 +569,9 @@
       selectedYearNumber.value = selectedYear;
 
       const finalAmount = calculateAmount(P, annualRate, t);
+      const totalPrincipal = calculateTotalPrincipal(P, t);
       resultText.textContent = formatMoney(finalAmount);
+      totalPrincipalText.textContent = formatMoney(totalPrincipal);
 
       const data = [];
       for (let year = 0; year <= t; year++) {
