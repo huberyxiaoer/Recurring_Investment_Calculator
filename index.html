@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>手机版复利增长计算器</title>
+  <title>手机版定投复利计算器</title>
 
   <style>
     * {
@@ -52,10 +52,29 @@
       padding: 14px 12px;
       border-radius: 14px;
       background: var(--soft);
-      font-size: clamp(22px, 7vw, 30px);
+      font-size: clamp(20px, 6vw, 30px);
       text-align: center;
       overflow-x: auto;
       white-space: nowrap;
+    }
+
+    .fraction {
+      display: inline-grid;
+      grid-template-rows: auto auto;
+      align-items: center;
+      vertical-align: middle;
+      line-height: 1.1;
+      margin-left: 4px;
+    }
+
+    .fraction span:first-child {
+      border-bottom: 2px solid currentColor;
+      padding: 0 6px 3px;
+    }
+
+    .fraction span:last-child {
+      padding-top: 3px;
+      font-size: 0.78em;
     }
 
     .control {
@@ -183,15 +202,15 @@
 
 <body>
   <main class="card">
-    <h1>手机版复利增长计算器</h1>
+    <h1>手机版定投复利计算器</h1>
 
     <div class="formula">
-      A = P × (1 + r)<sup>t</sup>
+      FV = P × <span class="fraction"><span>(1 + r)<sup>12N</sup> − 1</span><span>r</span></span>
     </div>
 
     <section class="control">
       <label>
-        <span>本金 P</span>
+        <span>每月定投金额 P</span>
         <span class="label-value"><span id="principalText">100,000</span> 美元</span>
       </label>
 
@@ -206,7 +225,7 @@
 
     <section class="control">
       <label>
-        <span>年收益率 r</span>
+        <span>年化收益率 R</span>
         <span class="label-value"><span id="rateText">5</span>%</span>
       </label>
 
@@ -258,7 +277,7 @@
     </div>
 
     <div class="note">
-      说明：这个版本针对手机屏幕优化。滑杆和输入框会自动上下排列，图表会根据手机屏幕宽度重新绘制。横轴是投资年数，纵轴是金额。拖动滑杆或直接输入数字，都可以调整参数。
+      说明：这个版本按“每月定投、按年化收益率复利”的公式计算。P 是每月定投金额，R 是年化收益率，r = (1 + R)^(1/12) − 1 是月化收益率，N 是投资年数。横轴是投资年数，纵轴是累计金额。
     </div>
   </main>
 
@@ -289,8 +308,20 @@
       return Math.round(num).toLocaleString("en-US");
     }
 
-    function calculateAmount(P, r, t) {
-      return P * Math.pow(1 + r, t);
+    function calculateAmount(P, annualRate, years) {
+      // 图片里的公式：
+      // FV = P × [((1 + r)^(12N) - 1) / r]
+      // annualRate 对应年化收益率 R
+      // monthlyRate 对应月化收益率 r = (1 + R)^(1/12) - 1
+      const monthlyRate = Math.pow(1 + annualRate, 1 / 12) - 1;
+      const months = 12 * years;
+
+      // 防止收益率为 0 时出现除以 0
+      if (monthlyRate === 0) {
+        return P * months;
+      }
+
+      return P * (Math.pow(1 + monthlyRate, months) - 1) / monthlyRate;
     }
 
     function clamp(value, min, max) {
@@ -480,7 +511,7 @@
       ctx.font = (isSmall ? "14px" : "16px") + " Arial";
       ctx.fillStyle = "#111827";
       ctx.textAlign = "center";
-      ctx.fillText("复利增长曲线", width / 2, isSmall ? 24 : 30);
+      ctx.fillText("定投复利增长曲线", width / 2, isSmall ? 24 : 30);
 
       ctx.font = (isSmall ? "11px" : "13px") + " Arial";
       ctx.fillText("投资年数", paddingLeft + chartWidth / 2, height - 18);
@@ -505,7 +536,7 @@
 
     function update() {
       const P = Number(principalInput.value);
-      const r = Number(rateInput.value) / 100;
+      const annualRate = Number(rateInput.value) / 100;
       const t = Number(yearsInput.value);
 
       updateSelectedYearLimit(t);
@@ -523,14 +554,14 @@
       yearsNumber.value = yearsInput.value;
       selectedYearNumber.value = selectedYear;
 
-      const finalAmount = calculateAmount(P, r, t);
+      const finalAmount = calculateAmount(P, annualRate, t);
       resultText.textContent = formatMoney(finalAmount);
 
       const data = [];
       for (let year = 0; year <= t; year++) {
         data.push({
           year: year,
-          amount: calculateAmount(P, r, year)
+          amount: calculateAmount(P, annualRate, year)
         });
       }
 
